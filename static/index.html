@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>StillAwayBot CP</title>
+	<style type="text/css">
+		body {
+			font-family: Arial;
+		}
+	</style>
+</head>
+<body>
+	<input type="text" placeholder="Bot nickname" id="nickname" style="width: 362px; margin-bottom: 5px;"><br>
+	<input type="text" placeholder="Bot admin nickname" id="admin" style="width: 362px; margin-bottom: 5px;"><br>
+	<input type="text" placeholder="IP" style="width: 150px;" id="host">
+	:
+	<input type="text" placeholder="Port" style="width: 50px;" id="port">
+	<button onclick="connect()">Connect</button>
+	/
+	<button onclick="destroy()">Destroy</button>
+	<br>
+	<b>Mode:</b> <span id="mode">none</span>
+	<br>
+	<button onclick="setMode('antiafk')">Anti-AFK</button>
+	<button onclick="setMode('follow')">Follow</button>
+	<button onclick="setMode('none')">None</button>
+	<div style="width: 362px; border: solid gray 1px; margin: 10px 0; height: 200px; max-height: 200px; overflow: scroll;" id="log"></div>
+	<input type="text" placeholder="Chat" style="width: 332px;" id="chat">
+	<button onclick="chat()">></button>
+</body>
+<script type="text/javascript">
+	var ws = new WebSocket("ws://localhost:3091");
+
+	var logd = document.getElementById("log");
+
+	function escapeHtml(text) {
+		return text
+	      .replace(/&/g, "&amp;")
+	      .replace(/</g, "&lt;")
+	      .replace(/>/g, "&gt;")
+	      .replace(/"/g, "&quot;")
+	      .replace(/'/g, "&#039;");
+	}
+
+	function log(msg) {
+		const span = document.createElement("div");
+		span.innerHTML = escapeHtml(msg);
+
+		logd.appendChild(span);
+
+		logd.scrollTop = logd.scrollHeight;
+	}
+
+	log("Hi");
+
+	ws.onopen = function() {
+		log("WS Established")
+	}
+
+	ws.onerror = function(err) {
+		log("WS Error: " + err.message);
+	}
+
+	ws.onmessage = function(event) {
+		if (event.data.startsWith("0")) {
+			const m = event.data.slice(1).split("/");
+
+			const nickname = m[0];
+			const admin = m[1];
+			const mode = m[2];
+
+			document.getElementById("nickname").value = nickname;
+			document.getElementById("admin").value = admin;
+			setMode(mode, true);
+
+			return window.somethingMagical = true;
+		}
+
+		if (event.data.startsWith("1")) log(event.data.slice(1) + "");
+	}
+
+	function connect() {
+		const nickname = document.getElementById("nickname").value;
+		const admin = document.getElementById("admin").value;
+		const host = document.getElementById("host").value;
+		const port = document.getElementById("port").value;
+
+		ws.send("0" + host + "/" + port + "/" + nickname + "/" + admin);
+	}
+
+	function destroy() {
+		setMode("none");
+		ws.send("1");
+		log("Destroy");
+	}
+
+	function setMode(mode, t) {
+		if (!t) ws.send("2" + mode);
+		log("Switch mode: " + mode);
+		document.getElementById("mode").innerHTML = mode;
+	}
+
+	function chat() {
+		ws.send("3" + document.getElementById("chat").value);
+	}
+</script>
+</html>
